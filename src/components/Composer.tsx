@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createPortal } from 'react-dom';
-import { X, Send, AlertCircle, Eye, Smile, Link2, Plus } from 'lucide-react';
+import { X, Send, AlertCircle, Eye, Smile, Link2, Plus, Upload } from 'lucide-react';
 import type { EmojiClickData } from 'emoji-picker-react';
 import { Platform, Post, ALL_PLATFORMS, PLATFORM_CHAR_LIMITS, PLATFORM_LABELS } from '../types';
 import { PlatformIcon } from './PlatformIcon';
@@ -113,6 +113,8 @@ export function Composer({ onClose, onSuccess, post }: ComposerProps) {
   const [retainedMediaUrls, setRetainedMediaUrls] = useState<string[]>(() =>
     post?.mediaUrls?.length ? [...post.mediaUrls] : post?.mediaUrl ? [post.mediaUrl] : []
   );
+  const [mediaInputMode, setMediaInputMode] = useState<'url' | 'upload'>('url');
+  const [pendingMediaInputMode, setPendingMediaInputMode] = useState<'url' | 'upload' | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -251,6 +253,28 @@ export function Composer({ onClose, onSuccess, post }: ComposerProps) {
     setRetainedMediaUrls((urls) => [...urls, url]);
     setMediaUrlInput('');
     setMediaUrlError(null);
+  };
+
+  const requestMediaInputMode = (mode: 'url' | 'upload') => {
+    if (mode === mediaInputMode) return;
+    if (retainedMediaUrls.length > 0 || mediaFiles.length > 0) {
+      setPendingMediaInputMode(mode);
+      return;
+    }
+    setMediaInputMode(mode);
+    setMediaUrlInput('');
+    setMediaUrlError(null);
+  };
+
+  const confirmMediaInputMode = () => {
+    if (!pendingMediaInputMode) return;
+    mediaFiles.forEach((file) => URL.revokeObjectURL(file.url));
+    setMediaFiles([]);
+    setRetainedMediaUrls([]);
+    setMediaUrlInput('');
+    setMediaUrlError(null);
+    setMediaInputMode(pendingMediaInputMode);
+    setPendingMediaInputMode(null);
   };
 
   const insertEmoji = (emoji: EmojiClickData) => {
@@ -503,83 +527,115 @@ export function Composer({ onClose, onSuccess, post }: ComposerProps) {
               Media{' '}
               <span className="text-gray-400 font-normal text-xs">(optional · images &amp; videos)</span>
             </label>
-            <div className="mb-3 rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/50">
-              <label htmlFor="composer-media-url" className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300">
+            <div className="mb-3 inline-flex rounded-xl border border-gray-200 bg-gray-100 p-1 dark:border-gray-700 dark:bg-gray-800" aria-label="Media input method">
+              <button
+                type="button"
+                onClick={() => requestMediaInputMode('url')}
+                aria-pressed={mediaInputMode === 'url'}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all',
+                  mediaInputMode === 'url'
+                    ? 'bg-white text-violet-700 shadow-sm dark:bg-gray-700 dark:text-violet-300'
+                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                )}
+              >
                 <Link2 className="h-3.5 w-3.5" />
-                Add an image by URL
-              </label>
-              <div className="flex gap-2">
-                <input
-                  id="composer-media-url"
-                  type="text"
-                  inputMode="url"
-                  value={mediaUrlInput}
-                  onChange={(event) => {
-                    setMediaUrlInput(event.target.value);
-                    if (mediaUrlError) setMediaUrlError(null);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      addMediaUrl();
-                    }
-                  }}
-                  placeholder="https://example.com/image.jpg"
-                  aria-invalid={!!mediaUrlError}
-                  aria-describedby={mediaUrlError ? 'composer-media-url-error' : undefined}
-                  className={cn(
-                    'min-w-0 flex-1 rounded-lg border bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400',
-                    'focus:outline-none focus:ring-2 focus:ring-violet-500 dark:bg-gray-900 dark:text-gray-100',
-                    mediaUrlError ? 'border-red-400' : 'border-gray-200 dark:border-gray-700'
-                  )}
-                />
-                <button
-                  type="button"
-                  onClick={addMediaUrl}
-                  disabled={retainedMediaUrls.length + mediaFiles.length >= 10}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Add URL
-                </button>
-              </div>
-              {mediaUrlError ? (
-                <p id="composer-media-url-error" className="mt-1.5 text-xs text-red-500">{mediaUrlError}</p>
-              ) : (
-                <p className="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
-                  Or drag and drop an image or video below. Up to 10 media items total.
-                </p>
-              )}
+                Image URL
+              </button>
+              <button
+                type="button"
+                onClick={() => requestMediaInputMode('upload')}
+                aria-pressed={mediaInputMode === 'upload'}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all',
+                  mediaInputMode === 'upload'
+                    ? 'bg-white text-violet-700 shadow-sm dark:bg-gray-700 dark:text-violet-300'
+                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                )}
+              >
+                <Upload className="h-3.5 w-3.5" />
+                Upload or drop
+              </button>
             </div>
-            {retainedMediaUrls.length > 0 && (
-              <div className="mb-3 grid grid-cols-3 gap-2">
-                {retainedMediaUrls.map((url) => {
-                  const isVideo = /\.(mp4|mov|webm|avi)(?:$|[?#])/i.test(url);
-                  return (
-                    <div key={url} className="group relative overflow-hidden rounded-xl border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800">
-                      {isVideo ? (
-                        <video src={url} className="h-28 w-full object-cover" muted playsInline preload="metadata" />
-                      ) : (
-                        <img src={url} alt="Attached post media" className="h-28 w-full object-cover" />
+            {mediaInputMode === 'url' ? (
+              <>
+                <div className="mb-3 rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/50">
+                  <label htmlFor="composer-media-url" className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300">
+                    <Link2 className="h-3.5 w-3.5" />
+                    Add an image by URL
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      id="composer-media-url"
+                      type="text"
+                      inputMode="url"
+                      value={mediaUrlInput}
+                      onChange={(event) => {
+                        setMediaUrlInput(event.target.value);
+                        if (mediaUrlError) setMediaUrlError(null);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          addMediaUrl();
+                        }
+                      }}
+                      placeholder="https://example.com/image.jpg"
+                      aria-invalid={!!mediaUrlError}
+                      aria-describedby={mediaUrlError ? 'composer-media-url-error' : undefined}
+                      className={cn(
+                        'min-w-0 flex-1 rounded-lg border bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400',
+                        'focus:outline-none focus:ring-2 focus:ring-violet-500 dark:bg-gray-900 dark:text-gray-100',
+                        mediaUrlError ? 'border-red-400' : 'border-gray-200 dark:border-gray-700'
                       )}
-                      <button
-                        type="button"
-                        onClick={() => setRetainedMediaUrls((urls) => urls.filter((item) => item !== url))}
-                        aria-label="Remove attached media"
-                        className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white opacity-100 transition-opacity hover:bg-black/80 sm:opacity-0 sm:group-hover:opacity-100"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            {retainedMediaUrls.length < 10 && (
+                    />
+                    <button
+                      type="button"
+                      onClick={addMediaUrl}
+                      disabled={retainedMediaUrls.length >= 10}
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Add URL
+                    </button>
+                  </div>
+                  {mediaUrlError && (
+                    <p id="composer-media-url-error" className="mt-1.5 text-xs text-red-500">{mediaUrlError}</p>
+                  )}
+                  <p className="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
+                    Add up to 10 image URLs. Switch input methods to upload or drop files instead.
+                  </p>
+                </div>
+                {retainedMediaUrls.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {retainedMediaUrls.map((url) => {
+                      const isVideo = /\.(mp4|mov|webm|avi)(?:$|[?#])/i.test(url);
+                      return (
+                        <div key={url} className="group relative overflow-hidden rounded-xl border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800">
+                          {isVideo ? (
+                            <video src={url} className="h-28 w-full object-cover" muted playsInline preload="metadata" />
+                          ) : (
+                            <img src={url} alt="Attached post media" className="h-28 w-full object-cover" />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setRetainedMediaUrls((urls) => urls.filter((item) => item !== url))}
+                            aria-label="Remove attached media"
+                            className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white opacity-100 transition-opacity hover:bg-black/80 sm:opacity-0 sm:group-hover:opacity-100"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            ) : (
               <MediaUploader
                 files={mediaFiles}
                 onChange={setMediaFiles}
-                maxFiles={10 - retainedMediaUrls.length}
+                maxFiles={10}
               />
             )}
           </div>
@@ -704,6 +760,16 @@ export function Composer({ onClose, onSuccess, post }: ComposerProps) {
         cancelLabel="Go Back"
         variant="primary"
         isLoading={isSubmitting}
+      />
+      <ConfirmDialog
+        isOpen={pendingMediaInputMode !== null}
+        onClose={() => setPendingMediaInputMode(null)}
+        onConfirm={confirmMediaInputMode}
+        title="Switch media input method?"
+        message={`Switching to ${pendingMediaInputMode === 'upload' ? 'upload or drop' : 'image URL'} will remove all media currently attached using ${mediaInputMode === 'upload' ? 'upload or drop' : 'image URL'}. This cannot be undone.`}
+        confirmLabel="Remove media & switch"
+        cancelLabel="Keep current media"
+        variant="danger"
       />
     </>
   );

@@ -8,7 +8,7 @@ A responsive, frontend-only social media scheduling dashboard built with React a
 - Filter by one or more platforms and statuses, and search post content. Selections are encoded in URL query parameters and restored on refresh. For example:
   `/?platform=instagram&platform=x&status=scheduled&status=failed&q=launch`
 - Compose and edit posts with text, multiple platform selection, a local date/time picker, and per-platform character counts.
-- Attach optional media either by entering an HTTP(S) image URL or by browsing/dragging image and video files into the composer. The composer previews and supports removing media, with a limit of 10 items.
+- Attach optional media using one input method at a time: enter HTTP(S) image URLs or browse/drag image and video files into the composer. Switching methods after attaching media asks for confirmation before removing the current attachments. The composer previews and supports removing media, with a limit of 10 items.
 - Validate that the scheduled time is in the future and convert local date/time input to a UTC ISO timestamp.
 - Retry failed posts with an immediate optimistic status update, a simulated one-second API delay, and a 20% simulated failure rate. A failed retry restores the failed status and displays the returned error.
 - Delete posts, preview posts, use the emoji picker, and switch between light and dark themes.
