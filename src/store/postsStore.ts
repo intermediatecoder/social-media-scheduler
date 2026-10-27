@@ -29,6 +29,7 @@ interface PostsState {
 
   fetchPosts: () => Promise<void>;
   createPost: (payload: CreatePostPayload) => Promise<void>;
+  duplicatePost: (post: Post) => Promise<void>;
   updatePost: (id: string, payload: CreatePostPayload) => Promise<void>;
   deletePost: (id: string) => Promise<void>;
   retryPost: (id: string) => Promise<void>;
@@ -64,6 +65,19 @@ export const usePostsStore = create<PostsState>((set, get) => ({
     set((state: PostsState) => ({ posts: [newPost, ...state.posts] }));
   },
 
+  duplicatePost: async (post: Post) => {
+    const scheduledDate = new Date(post.scheduledAt);
+    scheduledDate.setDate(scheduledDate.getDate() + 1);
+    scheduledDate.setHours(17, 0, 0, 0); // Set to 9:00 AM next day
+    await get().createPost({
+      content: post.content,
+      platforms: post.platforms,
+      mediaUrl: post.mediaUrl,
+      mediaUrls: post.mediaUrls,
+      scheduledAt: scheduledDate.toISOString(),
+    });
+  },
+    
   updatePost: async (id, payload) => {
     const currentPost = get().posts.find((post) => post.id === id);
     if (!currentPost) throw new Error('This post is no longer in the queue. Refresh and try again.');

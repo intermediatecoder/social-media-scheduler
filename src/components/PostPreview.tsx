@@ -110,7 +110,35 @@ function MediaCarousel({ files }: { files: MediaFile[] }) {
           muted
           playsInline
         />
-      )}
+      )},
+      {current.type === 'image' ? (
+      //   <img
+      //     src={current.url}
+      //     alt="Media preview"
+      //     className="w-full object-cover max-h-72"
+      //   />
+      // ) :
+       (
+        <iframe
+          src={current.url}
+          title='PDF reader'
+          className="w-full max-h-72 object-cover"
+        />
+      )
+    )
+      :current.type == 'video' ? (
+        <video
+          src={current.url}
+          className="w-full max-h-72 object-cover"
+          controls
+          muted
+          playsInline
+        />
+      ) : (
+        <img src={current.url} alt="Media preview" className="w-full object-cover max-h-72" />
+      )
+      },
+  
 
       {/* Navigation */}
       {files.length > 1 && (

@@ -6,7 +6,7 @@ export interface MediaFile {
   id: string;
   file: File;
   url: string; // object URL for preview
-  type: 'image' | 'video';
+  type: 'image' | 'video' | 'pdf';
   name: string;
   size: number;
 }
@@ -116,6 +116,7 @@ const ACCEPTED_TYPES = [
   'video/quicktime',
   'video/webm',
   'video/avi',
+  'application/pdf'
 ];
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB

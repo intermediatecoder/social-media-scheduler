@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Clock, Trash2, RefreshCw, AlertCircle, CheckCircle2, Calendar, ChevronLeft, ChevronRight, Video, Image as ImageIcon, X, Eye, Pencil } from 'lucide-react';
+import { Clock, Trash2, RefreshCw, AlertCircle, CheckCircle2, Calendar, ChevronLeft, ChevronRight, Video, Image as ImageIcon, X, Eye, Pencil, Copy } from 'lucide-react';
 import { PLATFORM_LABELS, Post } from '../types';
 import { cn } from '../lib/utils';
 import { PlatformIcon } from './PlatformIcon';
@@ -12,6 +12,7 @@ interface PostCardProps {
   post: Post;
   onRetryError?: (message: string) => void;
   onEditSuccess?: () => void;
+  onDuplicateSuccess?: () => void;
 }
 
 const statusConfig = {
@@ -216,8 +217,8 @@ function PostDetailsModal({ post, mediaUrls, initialMediaIndex, onClose }: {
   );
 }
 
-export function PostCard({ post, onRetryError, onEditSuccess }: PostCardProps) {
-  const { retryPost, deletePost, retryingIds, deletingIds } = usePostsStore();
+export function PostCard({ post, onRetryError, onEditSuccess, onDuplicateSuccess }: PostCardProps) {
+  const { retryPost, deletePost, duplicatePost, retryingIds, deletingIds } = usePostsStore();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [detailsMediaIndex, setDetailsMediaIndex] = useState<number | null>(null);
   const [showEditor, setShowEditor] = useState(false);
@@ -242,6 +243,15 @@ export function PostCard({ post, onRetryError, onEditSuccess }: PostCardProps) {
   const handleDeleteConfirmed = () => {
     setShowDeleteConfirm(false);
     deletePost(post.id);
+  };
+
+  const handleDuplicate = async () => {
+    try {
+      await duplicatePost(post);
+      onDuplicateSuccess?.();
+    } catch (err) {
+      onRetryError?.((err as Error).message);
+    }
   };
 
   return (
@@ -307,6 +317,21 @@ export function PostCard({ post, onRetryError, onEditSuccess }: PostCardProps) {
                 >
                   <RefreshCw className={cn('w-3.5 h-3.5', isRetrying && 'animate-spin')} />
                 </button>
+              )}
+
+              {
+                post.status == 'published' && (
+                   <button
+                   type="button"
+                  onClick={handleDuplicate}
+                  
+                  className="p-1.5 rounded-lg text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/15 transition-colors disabled:opacity-50"
+                  title="Duplicate"
+                  id={`duplicate-${post.id}`}
+                >
+                  <Copy className={cn('w-3.5 h-3.5')} />
+                </button>
+
               )}
               <button
                 onClick={() => setShowDeleteConfirm(true)}

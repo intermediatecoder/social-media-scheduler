@@ -55,6 +55,10 @@ export function Dashboard() {
     addToast('success', 'Post updated successfully!');
   }, [addToast]);
 
+  const handleDuplicateSuccess = useCallback(() => {
+    addToast('success', 'Post duplicated successfully!');
+  }, [addToast]);
+
   // Stats
   const scheduledCount = posts.filter((p: Post) => p.status === 'scheduled').length;
   const publishedCount = posts.filter((p: Post) => p.status === 'published').length;
@@ -210,7 +214,7 @@ export function Dashboard() {
 
         {/* Posts */}
         {!loading && !error && (
-          <PostQueue posts={posts} onRetryError={handleRetryError} onEditSuccess={handlePostEditSuccess} />
+          <PostQueue posts={posts} onRetryError={handleRetryError} onEditSuccess={handlePostEditSuccess} onDuplicateSuccess={handleDuplicateSuccess} />
         )}
       </main>
 

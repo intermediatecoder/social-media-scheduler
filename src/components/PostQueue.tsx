@@ -11,6 +11,7 @@ interface PostQueueProps {
   posts: Post[];
   onRetryError: (message: string) => void;
   onEditSuccess: () => void;
+  onDuplicateSuccess: () => void;
 }
 
 interface DayGroupProps {
@@ -20,9 +21,10 @@ interface DayGroupProps {
   onToggle: () => void;
   onRetryError: (message: string) => void;
   onEditSuccess: () => void;
+  onDuplicateSuccess: () => void;
 }
 
-function DayGroup({ dayLabel, dayPosts, isExpanded, onToggle, onRetryError, onEditSuccess }: DayGroupProps) {
+function DayGroup({ dayLabel, dayPosts, isExpanded, onToggle, onRetryError, onEditSuccess, onDuplicateSuccess }: DayGroupProps) {
   const dayId = dayLabel.replace(/\s/g, '-').toLowerCase();
 
   return (
@@ -56,7 +58,7 @@ function DayGroup({ dayLabel, dayPosts, isExpanded, onToggle, onRetryError, onEd
       {isExpanded && (
         <div id={`day-posts-${dayId}`} className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {dayPosts.map((post) => (
-            <PostCard key={post.id} post={post} onRetryError={onRetryError} onEditSuccess={onEditSuccess} />
+            <PostCard key={post.id} post={post} onRetryError={onRetryError} onEditSuccess={onEditSuccess} onDuplicateSuccess={onDuplicateSuccess} />
           ))}
         </div>
       )}
@@ -100,7 +102,7 @@ export function PostQueueSkeleton() {
   );
 }
 
-export function PostQueue({ posts, onRetryError, onEditSuccess }: PostQueueProps) {
+export function PostQueue({ posts, onRetryError, onEditSuccess, onDuplicateSuccess }: PostQueueProps) {
   const { platforms, statuses, query } = useFilters();
   const [expandedDays, setExpandedDays] = useState<Set<string> | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -160,6 +162,7 @@ export function PostQueue({ posts, onRetryError, onEditSuccess }: PostQueueProps
             isExpanded={isExpanded}
             onRetryError={onRetryError}
             onEditSuccess={onEditSuccess}
+            onDuplicateSuccess={onDuplicateSuccess}
             onToggle={() => setExpandedDays((current) => {
               const next = current
                 ? new Set(current)
@@ -202,6 +205,7 @@ export function PostQueue({ posts, onRetryError, onEditSuccess }: PostQueueProps
                   isExpanded={expandedDays?.has(`history-${dayLabel}`) ?? false}
                   onRetryError={onRetryError}
                   onEditSuccess={onEditSuccess}
+                  onDuplicateSuccess={onDuplicateSuccess}
                   onToggle={() => setExpandedDays((current) => {
                     const next = current ? new Set(current) : new Set(upcomingGroups.slice(0, 4).map(([label]) => label));
                     const key = `history-${dayLabel}`;
